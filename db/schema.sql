@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS department;
 DROP TABLE IF EXISTS role;
 DROP TABLE IF EXISTS employee;
+USE employee_db;
 
 CREATE TABLE department (
   id INTEGER auto_increment,

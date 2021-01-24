@@ -109,60 +109,62 @@ function readEmployees() {
 //add new dept
 function addDepartment() {
     inquirer.prompt([{
-        name: 'newDept',
+        name: 'newDepartment',
         type: 'input',
-        message: "What is the department's name?"
-    }]).then((answer) => {
-        let query = connection.query(
-            `INSERT INTO department (name) VALUES (${answer.newDept})`,
+        message: "What is the new department's name?"
+    }]).then(function (answer) {
+        var query = connection.query(
+            "INSERT INTO department SET ?", {
+                name: answer.newDepartment
+            },
 
             function (err, res) {
                 if (err) throw err;
-                console.log(answer.newDept + ' succesfully added!');
+                console.log(answer.newDepartment + ' succesfully added!');
+                console.table(answer);
                 mainMenu();
             }
         );
     })
-    // console.log(query.sql);
 }
 
 //add new role
 function addRole() {
-    inquirer.prompt([{
-            name: 'newRole',
-            type: 'input',
-            message: "What is the name of this role?"
-        },
-        {
-            name: 'newSalary',
-            type: 'input',
-            message: "What is the salary for this role?"
-        },
-        {
-            name: 'newDeptId',
-            type: 'list',
-            message: "What departement does this role belong to?",
-            choices: function () {
-                let choiceArray = results[1].map(choice => choice.name);
-                return choiceArray;
+    connection.query(`SELECT role.title AS newRole, role.salary AS newSalary, role.department_id AS newDeptId FROM role`, function (err, results) {
+        if (err) throw err;
+
+        inquirer.prompt([{
+                name: 'newRole',
+                type: 'input',
+                message: "What is the name of this role?"
             },
-        }
-    ]).then((answer) => {
-        var query = connection.query(
-            "INSERT INTO role(title, salary, department_id)", {
-                title: answer.newRole,
-                salary: answer.newSalary,
-                department_id: answer.newDeptId
+            {
+                name: 'newSalary',
+                type: 'input',
+                message: "What is the salary for this role?"
             },
-            function (err, res) {
-                if (err) throw err;
-                console.log(answer.newRole + ' succesfully added!');
+            {
+                name: 'newDeptId',
+                type: 'list',
+                message: "What departement does this role belong to?",
+                choices: function () {
+                    let choiceList = results[1].map(choice => choice.name);
+                    return choiceList;
+                },
             }
-        );
+        ]).then(function (answer) {
+            connection.query(
+                `INSERT INTO role(title, salary, department_id) 
+                 VALUES 
+                 ("${answer.newRole}", "${answer.newSalary}", 
+                 (SELECT department_id FROM department WHERE name = "${answer.newDeptId}"));`
+            )
+            console.log(answer.newRole + ' succesfully added!');
+            console.table(results);
+            mainMenu();
+        });
     });
-    console.log(query.sql);
-    mainMenu();
-}
+};
 
 
 //add new role
