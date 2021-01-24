@@ -16,13 +16,16 @@ VALUES
 ('Legal Team Lead', 110000, 7),
 ('Financial Accountant', 100000, 8);
 
+
 INSERT INTO employee (first_name, last_name, role_id, manager_id)
 VALUES
-('Jesse', 'Pinkman', 1),
-('Michael', 'Scott', 5),
-('Geralt', 'Rivia', 3),
-('Mike', 'Ehrmantraut', 2),
-('Daniel', 'LaRusso', 7),
-('Jamie', 'Fraser', 4),
-('Robby', 'Keene', 8),
-('Saul', 'Goodman', 6);
+('Jesse', 'Pinkman', 1, NULL),
+('Michael', 'Scott', 5, NULL),
+('Geralt', 'Rivia', 3, NULL),
+('Mike', 'Ehrmantraut', 2, NULL),
+('Daniel', 'LaRusso', 7, NULL),
+('Jamie', 'Fraser', 4, NULL),
+('Robby', 'Keene', 8, NULL),
+('Saul', 'Goodman', 6, NULL);
+
+-- UPDATE `employee_db`.`employees` SET `manager_id` = '1' WHERE (`id` > '1');
