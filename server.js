@@ -34,6 +34,9 @@ function mainMenu() {
             'add an employee',
             'update an employee role',
             'update an employee manager',
+            'remove an employee',
+            'remove a role',
+            'remove a department',
             'all done!'
         ]
     }).then((answer) => {
@@ -61,6 +64,15 @@ function mainMenu() {
                 break;
             case 'update an employee manager':
                 updateEmployeeManager();
+                break;
+            case 'remove an employee':
+                deleteEmployee();
+                break;
+            case 'remove a role':
+                deleteRole();
+                break;
+            case 'remove a department':
+                deleteDepartment();
                 break;
             case 'all done!':
                 closeApp();
@@ -202,11 +214,11 @@ function addEmployee() {
         ]).then(function (answer) {
             connection.query(
                 `SET @roleID = (SELECT id FROM role WHERE title = "${answer.roleId}");
-                SET @employeeID = (SELECT id FROM employee WHERE first_name = "${answer.employeeName}");
+                SET @managerID = (SELECT id FROM employee WHERE first_name = "${answer.employeeManager}");
 
                 INSERT INTO employee(first_name, last_name, role_id, manager_id)
                  VALUES ("${answer.employeeName}", "${answer.employeeLastName}", 
-                 @roleID, @employeeID)`,
+                 @roleID, @managerID)`,
 
                 function (err, res) {
                     if (err) throw err;
@@ -257,6 +269,7 @@ function updateEmployeeRole() {
         });
     });
 }
+
 //update employee manager
 function updateEmployeeManager() {
     connection.query(`SELECT * FROM employee`, function (err, results) {
@@ -292,6 +305,74 @@ function updateEmployeeManager() {
         })
     })
 }
+
+//delete info
+
+//delete a role
+function deleteRole() {
+    connection.query(`SELECT * FROM role`, function (err, results) {
+        if (err) throw err;
+
+        let choiceList = results.map(choice => choice.title);
+
+        inquirer.prompt([{
+            name: 'deletedRole',
+            type: 'list',
+            message: "What role would you like to remove?",
+            choices: choiceList
+        }, ]).then(function (answer) {
+            connection.query(
+                `DELETE FROM role WHERE title = "${answer.deletedRole}";`
+            )
+            console.log(answer.deletedRole + ' succesfully removed!');
+            readRoles();
+        });
+    });
+};
+
+//delete an employee
+function deleteEmployee() {
+    connection.query(`SELECT * FROM employee`, function (err, results) {
+        if (err) throw err;
+
+        let choiceList = results.map(choice => choice.first_name);
+
+        inquirer.prompt([{
+            name: 'deletedEmployee',
+            type: 'list',
+            message: "What employee would you like to remove?",
+            choices: choiceList
+        }, ]).then(function (answer) {
+            connection.query(
+                `DELETE FROM employee WHERE first_name = "${answer.deletedEmployee}";`
+            )
+            console.log(answer.deletedEmployee + ' succesfully removed!');
+            readEmployees();
+        });
+    });
+};
+
+//delete a department
+function deleteDepartment() {
+    connection.query(`SELECT * FROM department`, function (err, results) {
+        if (err) throw err;
+
+        let choiceList = results.map(choice => choice.name);
+
+        inquirer.prompt([{
+            name: 'deletedDepartment',
+            type: 'list',
+            message: "What department would you like to remove?",
+            choices: choiceList
+        }, ]).then(function (answer) {
+            connection.query(
+                `DELETE FROM department WHERE name = "${answer.deletedDepartment}";`
+            )
+            console.log(answer.deletedDepartment + ' succesfully removed!');
+            readDepartments();
+        });
+    });
+};
 
 function closeApp() {
     console.log("Thank you for using the Employee Tracker App! Please press CTRL + C to exit.");
