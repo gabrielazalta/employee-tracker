@@ -96,7 +96,7 @@ function readDepartments() {
 //show roles
 function readRoles() {
     console.log("Showing all roles:");
-    connection.query("SELECT * FROM role", function (err, res) {
+    connection.query(`SELECT title AS "Job Title", salary AS "Salary", name AS "Department" FROM role RIGHT JOIN department ON role.department_id = department.id`, function (err, res) {
         if (err) throw err;
         console.table(res);
         mainMenu();
