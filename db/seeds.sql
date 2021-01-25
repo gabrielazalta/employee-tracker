@@ -11,10 +11,10 @@ VALUES
 ('Software Engineer', 80000, 2),
 ('Lawyer', 100000, 3),
 ('Administrative Accountant', 90000, 4),
-('Sales Lead', 75000, 5),
-('Lead Engineer', 100000, 6),
-('Legal Team Lead', 110000, 7),
-('Financial Accountant', 100000, 8);
+('Sales Lead', 75000, 1),
+('Lead Engineer', 100000, 2),
+('Legal Team Lead', 110000, 3),
+('Financial Accountant', 100000, 4);
 
 
 INSERT INTO employee (first_name, last_name, role_id, manager_id)
@@ -28,4 +28,3 @@ VALUES
 ('Robby', 'Keene', 8, NULL),
 ('Saul', 'Goodman', 6, NULL);
 
--- UPDATE `employee_db`.`employees` SET `manager_id` = '1' WHERE (`id` > '1');

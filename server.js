@@ -10,7 +10,8 @@ var connection = mysql.createConnection({
     port: 3306,
     user: "root",
     password: "Lucy0927!",
-    database: "employee_db"
+    database: "employee_db",
+    multipleStatements: true
 });
 
 connection.connect(function (err) {
@@ -76,7 +77,6 @@ function readDepartments() {
     connection.query("SELECT * FROM department", function (err, res) {
         if (err) throw err;
         console.table(res);
-        connection.end();
         mainMenu();
     });
 }
@@ -87,7 +87,6 @@ function readRoles() {
     connection.query("SELECT * FROM role", function (err, res) {
         if (err) throw err;
         console.table(res);
-        connection.end();
         mainMenu();
     });
 }
@@ -98,7 +97,6 @@ function readEmployees() {
     connection.query("SELECT * FROM employee", function (err, res) {
         if (err) throw err;
         console.table(res);
-        connection.end();
         mainMenu();
     });
 }
@@ -122,7 +120,7 @@ function addDepartment() {
                 if (err) throw err;
                 console.log(answer.newDepartment + ' succesfully added!');
                 console.table(answer);
-                mainMenu();
+                readDepartments();
             }
         );
     })
@@ -130,8 +128,10 @@ function addDepartment() {
 
 //add new role
 function addRole() {
-    connection.query(`SELECT role.title AS newRole, role.salary AS newSalary, role.department_id AS newDeptId FROM role`, function (err, results) {
+    connection.query(`SELECT * FROM department`, function (err, results) {
         if (err) throw err;
+
+        let choiceList = results.map(choice => choice.name);
 
         inquirer.prompt([{
                 name: 'newRole',
@@ -147,39 +147,39 @@ function addRole() {
                 name: 'newDeptId',
                 type: 'list',
                 message: "What departement does this role belong to?",
-                choices: function () {
-                    let choiceList = results[1].map(choice => choice.name);
-                    return choiceList;
-                },
-            }
+                choices: choiceList
+            },
         ]).then(function (answer) {
             connection.query(
                 `INSERT INTO role(title, salary, department_id) 
                  VALUES 
                  ("${answer.newRole}", "${answer.newSalary}", 
-                 (SELECT department_id FROM department WHERE name = "${answer.newDeptId}"));`
+                 (SELECT id FROM department WHERE name = "${answer.newDeptId}"));`
             )
             console.log(answer.newRole + ' succesfully added!');
-            console.table(results);
-            mainMenu();
+            readRoles();
         });
     });
 };
 
 
-//add new role
+//add new employee
 function addEmployee() {
-    const newEmployee = `SELECT * FROM employee`
-    connection.query(newEmployee, (err, results) => {
+    tableVariable = `SELECT id AS "employee_id", first_name AS "first_name", last_name AS "last_name" FROM employee; SELECT id AS "role_id", title FROM role`;
+
+    connection.query(tableVariable, function (err, results) {
         if (err) throw err;
 
-        console.log('');
-        console.table(chalk.yellow('List of current Roles:'), results[0]);
+        let employeeList = results[0].map(choice => choice.first_name);
+        let roleList = results[1].map(choice => choice.title);
+
+        // console.log("---test---");
+        // console.log(roleList);
 
         inquirer.prompt([{
                 name: 'employeeName',
                 type: 'input',
-                message: "What is this employees first name?"
+                message: "What is this employee's first name?"
             },
             {
                 name: 'employeeLastName',
@@ -187,123 +187,113 @@ function addEmployee() {
                 message: "What is this employees last name?"
             },
             {
-                name: 'RoleId',
-                type: 'input',
-                message: "What is this employees role ID?"
+                name: 'roleId',
+                type: 'list',
+                message: "What is this employees role?",
+                choices: roleList
             },
             {
                 name: 'employeeManager',
                 type: 'list',
                 message: "Who is this employee's manager?",
-                choices: function () {
-                    let choiceArray = results[1].map(choice => choice.first_name + choice.last_name);
-                    return choiceArray;
-                },
+                choices: employeeList
             }
 
-        ]).then((answer) => {
-            var query = connection.query(
-                "INSERT INTO employee(first_name, last_name, role_id, manager_id)", {
-                    first_name: answer.employeeName,
-                    last_name: answer.employeeLastName,
-                    role_id: answer.RoleId,
-                    manager_id: answer.updateEmployeeManager
-                },
+        ]).then(function (answer) {
+            connection.query(
+                `SET @roleID = (SELECT id FROM role WHERE title = "${answer.roleId}");
+                SET @employeeID = (SELECT id FROM employee WHERE first_name = "${answer.employeeName}");
+
+                INSERT INTO employee(first_name, last_name, role_id, manager_id)
+                 VALUES ("${answer.employeeName}", "${answer.employeeLastName}", 
+                 @roleID, @employeeID)`,
+
                 function (err, res) {
                     if (err) throw err;
-                    console.log(answer.employeeName + answer.employeeLastName + ' succesfully added!');
+                    console.log(answer.employeeName + " " + answer.employeeLastName + ' has been succesfully added!');
+                    readEmployees();
                 }
             );
         })
-        console.log(query.sql);
-        mainMenu();
     })
 }
 
 
 //update employee role
 function updateEmployeeRole() {
-    const updateRole = `SELECT * FROM employee; SELECT * FROM role`
-    connection.query(updateRole, (err, results) => {
+    tableVariable = `SELECT id AS "employee_id", first_name AS "first_name", last_name AS "last_name" FROM employee; SELECT id AS "role_id", title FROM role`;
+
+    connection.query(tableVariable, function (err, results) {
         if (err) throw err;
+
+        let employeeList = results[0].map(choice => choice.first_name);
+        let roleList = results[1].map(choice => choice.title);
 
         inquirer.prompt([{
                 name: 'chooseRole',
                 type: 'list',
                 message: "What employee would you like to update?",
-                choices: function () {
-                    let choiceArray = results[1].map(choice => choice.first_name + choice.last_name);
-                    return choiceArray;
-                },
+                choices: employeeList
             },
             {
                 name: 'newRole',
-                type: 'input',
+                type: 'list',
                 message: "What role would you like to assign to this employee?",
-                choices: function () {
-                    let choiceArray = results[1].map(choice => choice.title);
-                    return choiceArray;
-                },
+                choices: roleList
             },
 
-        ]).then((answer) => {
-            var query = connection.query(
-                "UPDATE role SET ? WHERE ?",
-                [{
-                    role_id: answer.newRole
-                }],
-                function (err, res) {
+        ]).then(function (answer) {
+            connection.query(
+                `SET @roleID = (SELECT id FROM role WHERE title = "${answer.newRole}");
+                SET @employeeID = (SELECT id FROM employee WHERE first_name = "${answer.chooseRole}");
+                UPDATE employee SET role_id = @roleID  WHERE id = @employeeID;`,
+
+                function (err, results) {
                     if (err) throw err;
-                    console.log("This employee's role has been updated to " + answer.newRole);
+                    console.log(answer.chooseRole + "'s" + " role has been updated to " + answer.newRole);
+                    readEmployees();
                 }
             );
-        })
-        console.log(query.sql);
-        mainMenu();
-    })
+        });
+    });
 }
 //update employee manager
 function updateEmployeeManager() {
-    const updateManager = `SELECT * FROM employee`
-    connection.query(updateManager, (err, results) => {
+    connection.query(`SELECT * FROM employee`, function (err, results) {
         if (err) throw err;
+
+        let employeeList = results.map(choice => choice.first_name);
 
         inquirer.prompt([{
                 name: 'chooseEmployee',
                 type: 'list',
                 message: "What employee would you like to update?",
-                choices: function () {
-                    let choiceArray = results[1].map(choice => choice.first_name + choice.last_name);
-                    return choiceArray;
-                },
+                choices: employeeList
             },
             {
                 name: 'newManager',
-                type: 'input',
+                type: 'list',
                 message: "What manager would you like to assign to this employee?",
-                choices: function () {
-                    let choiceArray = results[1].map(choice => choice.first_name + choice.last_name);
-                    return choiceArray;
-                },
+                choices: employeeList
             }
 
-        ]).then((answer) => {
-            var query = connection.query(
-                "UPDATE employee SET ? WHERE ?",
-                [{
-                        manager_id: answer.newManager,
-                    },
-                    {
-                        first_name: answer.chooseEmployee
-                    }
-                ],
+        ]).then(function (answer) {
+            connection.query(
+                `SET @employee = (SELECT id FROM employee WHERE first_name = "${answer.chooseEmployee}");
+                SET @manager = (SELECT id FROM employee WHERE first_name = "${answer.newManager}");
+                UPDATE employee SET manager_id = @manager  WHERE id = @employee;`,
+
                 function (err, res) {
                     if (err) throw err;
-                    console.log("This employee's manager has been updated to " + answer.newManager);
+                    console.log(answer.chooseEmployee + "'s" + " manager has been updated to " + answer.newManager);
+                    readEmployees();
                 }
             );
         })
-        console.log(query.sql);
-        mainMenu();
     })
+}
+
+function closeApp() {
+    console.log("Thank you for using the Employee Tracker App! Please press CTRL + C to exit.");
+    console.log("Bye!!!");
 }
